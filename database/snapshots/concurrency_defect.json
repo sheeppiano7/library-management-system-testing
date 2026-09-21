@@ -1,0 +1,10 @@
+{
+  "evidence_type": "sanitized_defect_snapshot",
+  "case_id": "BOR-CONC-001",
+  "test_design": "two sessions borrow the final copy at the same time",
+  "runs": 3,
+  "before_each_run": {"stock": 1, "active_borrow_count": 0},
+  "first_version_result": {"successful_requests": 2, "stock": 0, "active_borrow_count": 2, "status": "failed"},
+  "fixed_version_result": {"successful_requests": 1, "rejected_requests": 1, "stock": 0, "active_borrow_count": 1, "status": "passed"},
+  "decision_rule": "stock must never be negative and one remaining copy may create at most one active borrow"
+}

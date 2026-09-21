@@ -1,0 +1,14 @@
+{
+  "evidence_type": "sanitized_database_snapshot",
+  "case_id": "RET-001",
+  "database": "book_manage_test_demo",
+  "book": {"book_name": "QA_PUBLIC_LAST_COPY", "stock": 1},
+  "borrow": {
+    "reader": "QA_PUBLIC_READER_A",
+    "book": "QA_PUBLIC_LAST_COPY",
+    "return_date": "2026-09-15T16:40:00+08:00",
+    "is_overdue": false
+  },
+  "active_borrow_count": 0,
+  "result": "passed"
+}

@@ -28,6 +28,7 @@
 
 ```text
 app/             Flask 应用修复副本（配置已脱敏）
+database/        三种数据库的建表、合成初始化脚本与关键快照
 tests/api/       Postman Collection 与公开环境模板
 tests/ui/        Selenium + pytest + Page Object 用例
 docs/            缺陷修复记录、执行记录与可浏览的回归报告
@@ -50,6 +51,7 @@ docs/            缺陷修复记录、执行记录与可浏览的回归报告
 - [缺陷修复记录](docs/defect-fix-record.md)
 - [逐条执行记录](docs/execution-record.md)
 - [Selenium HTML 报告](docs/selenium-report.html)
+- [脱敏数据库复现材料](database/README.md)
 
 ## 范围说明
 
