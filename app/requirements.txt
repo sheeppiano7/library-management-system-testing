@@ -1,0 +1,22 @@
+# 数据库驱动
+pymysql>=1.1.0
+pymssql>=2.2.11  # SQL Server（如果使用SQL Server账号）
+pyodbc>=5.0.1    # SQL Server（Windows身份验证需要）
+psycopg2-binary>=2.9.9
+pg8000>=1.31.5
+
+# ORM框架
+SQLAlchemy>=2.0.23
+
+# Web框架
+Flask>=3.0.0
+
+# 定时任务
+APScheduler>=3.10.4
+
+# 数据处理和可视化
+matplotlib>=3.7.0  # 兼容Python 3.12
+pandas>=2.1.0
+
+# 注意：hashlib, datetime, email, smtplib 是Python标准库，无需安装
+

@@ -1,0 +1,989 @@
+{
+  "info": {
+    "name": "图书系统-Postman真实补测-31步",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "2026-09-19补充实践；独立合成数据；31个请求步骤，不混入历史70/101项统计。Flask表单接口返回HTML，使用Cookie会话和业务断言。"
+  },
+  "item": [
+    {
+      "name": "PM-01 退出清空登录态",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{base_url}}/logout",
+        "description": "{\"oracle\": \"unchanged\", \"case_id\": \"PM-01\", \"title\": \"退出清空登录态\"}"
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const tag='PM_'+Date.now()+'_'+Math.floor(Math.random()*10000);",
+              "pm.collectionVariables.set('run_tag',tag);",
+              "pm.collectionVariables.set('book_name',tag+'_BOOK');",
+              "pm.collectionVariables.set('reader_a',tag+'_A');",
+              "pm.collectionVariables.set('reader_b',tag+'_B');",
+              "pm.collectionVariables.set('phone_a','18'+Date.now().toString().slice(-9));",
+              "pm.collectionVariables.set('phone_b','17'+Date.now().toString().slice(-9));"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 302',()=>pm.response.to.have.status(302));",
+              "pm.test('退出跳转登录页',()=>pm.expect(pm.response.headers.get('Location')).to.eql('/login'));"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "followRedirects": false
+      }
+    },
+    {
+      "name": "PM-02 未登录访问图书被拦截",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{base_url}}/books",
+        "description": "{\"oracle\": \"unchanged\", \"case_id\": \"PM-02\", \"title\": \"未登录访问图书被拦截\"}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200',()=>pm.response.to.have.status(200));",
+              "pm.test('业务提示符合预期',()=>pm.expect(pm.response.text()).to.include(\"请输入用户名\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "PM-03 错误密码拒绝登录",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": "{{base_url}}/login",
+        "description": "{\"oracle\": \"unchanged\", \"case_id\": \"PM-03\", \"title\": \"错误密码拒绝登录\"}",
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "username",
+              "value": "admin",
+              "type": "text"
+            },
+            {
+              "key": "password",
+              "value": "wrong_test_password",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200',()=>pm.response.to.have.status(200));",
+              "pm.test('业务提示符合预期',()=>pm.expect(pm.response.text()).to.include(\"密码错误\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "PM-04 管理员登录与Cookie会话",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": "{{base_url}}/login",
+        "description": "{\"oracle\": \"unchanged\", \"case_id\": \"PM-04\", \"title\": \"管理员登录与Cookie会话\"}",
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "username",
+              "value": "{{admin_user}}",
+              "type": "text"
+            },
+            {
+              "key": "password",
+              "value": "{{admin_password}}",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200',()=>pm.response.to.have.status(200));",
+              "pm.test('业务提示符合预期',()=>pm.expect(pm.response.text()).to.include(\"管理员\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "PM-05 新增库存1图书并提取编号",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": "{{base_url}}/books/add",
+        "description": "{\"oracle\": \"create_book\", \"case_id\": \"PM-05\", \"title\": \"新增库存1图书并提取编号\"}",
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "book_name",
+              "value": "{{book_name}}",
+              "type": "text"
+            },
+            {
+              "key": "author",
+              "value": "合成作者",
+              "type": "text"
+            },
+            {
+              "key": "category",
+              "value": "Postman补测",
+              "type": "text"
+            },
+            {
+              "key": "stock",
+              "value": "1",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200',()=>pm.response.to.have.status(200));",
+              "{ const $=require('cheerio').load(pm.response.text());",
+              "const rows=$('tbody tr').toArray().filter(el=>$(el).find('td').eq(1).text().trim()===pm.collectionVariables.get('book_name'));",
+              "pm.test('目标合成记录唯一',()=>pm.expect(rows.length).to.eql(1));",
+              "if(rows.length===1) pm.collectionVariables.set('book_id',$(rows[0]).find('td').eq(0).text().trim()); }",
+              "const $=require('cheerio').load(pm.response.text());",
+              "const row=$('tbody tr').toArray().find(el=>$(el).find('td').eq(1).text().trim()===pm.collectionVariables.get('book_name'));",
+              "pm.test('目标图书库存为1',()=>{pm.expect(row).to.exist; pm.expect(Number($(row).find('td').eq(4).text().trim())).to.eql(1);});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "PM-06 按名称查询图书",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{base_url}}/books/search?q={{book_name}}",
+        "description": "{\"oracle\": \"unchanged\", \"case_id\": \"PM-06\", \"title\": \"按名称查询图书\"}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200',()=>pm.response.to.have.status(200));",
+              "const $=require('cheerio').load(pm.response.text());",
+              "const row=$('tbody tr').toArray().find(el=>$(el).find('td').eq(1).text().trim()===pm.collectionVariables.get('book_name'));",
+              "pm.test('目标图书库存为1',()=>{pm.expect(row).to.exist; pm.expect(Number($(row).find('td').eq(4).text().trim())).to.eql(1);});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "PM-07 非数字库存应400拒绝",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": "{{base_url}}/books/add",
+        "description": "{\"oracle\": \"unchanged\", \"case_id\": \"PM-07\", \"title\": \"非数字库存应400拒绝\"}",
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "book_name",
+              "value": "{{run_tag}}_INVALID",
+              "type": "text"
+            },
+            {
+              "key": "stock",
+              "value": "abc",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 400',()=>pm.response.to.have.status(400));",
+              "pm.test('业务提示符合预期',()=>pm.expect(pm.response.text()).to.include(\"非负整数\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "PM-08 负库存应400拒绝",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": "{{base_url}}/books/add",
+        "description": "{\"oracle\": \"unchanged\", \"case_id\": \"PM-08\", \"title\": \"负库存应400拒绝\"}",
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "book_name",
+              "value": "{{run_tag}}_NEG",
+              "type": "text"
+            },
+            {
+              "key": "stock",
+              "value": "-1",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 400',()=>pm.response.to.have.status(400));",
+              "pm.test('业务提示符合预期',()=>pm.expect(pm.response.text()).to.include(\"非负整数\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "PM-09 新增读者A并提取编号",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": "{{base_url}}/readers/add",
+        "description": "{\"oracle\": \"create_reader\", \"case_id\": \"PM-09\", \"title\": \"新增读者A并提取编号\"}",
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "name",
+              "value": "{{reader_a}}",
+              "type": "text"
+            },
+            {
+              "key": "gender",
+              "value": "其他",
+              "type": "text"
+            },
+            {
+              "key": "phone",
+              "value": "{{phone_a}}",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200',()=>pm.response.to.have.status(200));",
+              "{ const $=require('cheerio').load(pm.response.text());",
+              "const rows=$('tbody tr').toArray().filter(el=>$(el).find('td').eq(1).text().trim()===pm.collectionVariables.get('reader_a'));",
+              "pm.test('目标合成记录唯一',()=>pm.expect(rows.length).to.eql(1));",
+              "if(rows.length===1) pm.collectionVariables.set('reader_a_id',$(rows[0]).find('td').eq(0).text().trim()); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "PM-10 新增读者B并提取编号",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": "{{base_url}}/readers/add",
+        "description": "{\"oracle\": \"create_reader\", \"case_id\": \"PM-10\", \"title\": \"新增读者B并提取编号\"}",
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "name",
+              "value": "{{reader_b}}",
+              "type": "text"
+            },
+            {
+              "key": "gender",
+              "value": "其他",
+              "type": "text"
+            },
+            {
+              "key": "phone",
+              "value": "{{phone_b}}",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200',()=>pm.response.to.have.status(200));",
+              "{ const $=require('cheerio').load(pm.response.text());",
+              "const rows=$('tbody tr').toArray().filter(el=>$(el).find('td').eq(1).text().trim()===pm.collectionVariables.get('reader_b'));",
+              "pm.test('目标合成记录唯一',()=>pm.expect(rows.length).to.eql(1));",
+              "if(rows.length===1) pm.collectionVariables.set('reader_b_id',$(rows[0]).find('td').eq(0).text().trim()); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "PM-11 重复手机号拒绝",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": "{{base_url}}/readers/add",
+        "description": "{\"oracle\": \"unchanged\", \"case_id\": \"PM-11\", \"title\": \"重复手机号拒绝\"}",
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "name",
+              "value": "{{run_tag}}_DUP",
+              "type": "text"
+            },
+            {
+              "key": "phone",
+              "value": "{{phone_a}}",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200',()=>pm.response.to.have.status(200));",
+              "pm.test('业务提示符合预期',()=>pm.expect(pm.response.text()).to.include(\"手机号已存在\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "PM-12 管理员退出",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{base_url}}/logout",
+        "description": "{\"oracle\": \"unchanged\", \"case_id\": \"PM-12\", \"title\": \"管理员退出\"}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 302',()=>pm.response.to.have.status(302));",
+              "pm.test('退出跳转登录页',()=>pm.expect(pm.response.headers.get('Location')).to.eql('/login'));"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "followRedirects": false
+      }
+    },
+    {
+      "name": "PM-13 操作员登录",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": "{{base_url}}/login",
+        "description": "{\"oracle\": \"unchanged\", \"case_id\": \"PM-13\", \"title\": \"操作员登录\"}",
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "username",
+              "value": "{{operator_user}}",
+              "type": "text"
+            },
+            {
+              "key": "password",
+              "value": "{{operator_password}}",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200',()=>pm.response.to.have.status(200));",
+              "pm.test('业务提示符合预期',()=>pm.expect(pm.response.text()).to.include(\"操作员\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "PM-14 正常借阅并提取借阅编号",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": "{{base_url}}/borrows/add",
+        "description": "{\"oracle\": \"borrow\", \"case_id\": \"PM-14\", \"title\": \"正常借阅并提取借阅编号\"}",
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "book_id",
+              "value": "{{book_id}}",
+              "type": "text"
+            },
+            {
+              "key": "reader_id",
+              "value": "{{reader_a_id}}",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200',()=>pm.response.to.have.status(200));",
+              "pm.test('业务提示符合预期',()=>pm.expect(pm.response.text()).to.include(\"未归还\"));",
+              "{ const $=require('cheerio').load(pm.response.text());",
+              "const rows=$('tbody tr').toArray().filter(el=>$(el).find('td').eq(1).text().trim()===pm.collectionVariables.get('book_name'));",
+              "pm.test('目标合成记录唯一',()=>pm.expect(rows.length).to.eql(1));",
+              "if(rows.length===1) pm.collectionVariables.set('borrow_id',$(rows[0]).find('td').eq(0).text().trim()); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "PM-15 借阅后库存为0",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{base_url}}/books/search?q={{book_name}}",
+        "description": "{\"oracle\": \"unchanged\", \"case_id\": \"PM-15\", \"title\": \"借阅后库存为0\"}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200',()=>pm.response.to.have.status(200));",
+              "const $=require('cheerio').load(pm.response.text());",
+              "const row=$('tbody tr').toArray().find(el=>$(el).find('td').eq(1).text().trim()===pm.collectionVariables.get('book_name'));",
+              "pm.test('目标图书库存为0',()=>{pm.expect(row).to.exist; pm.expect(Number($(row).find('td').eq(4).text().trim())).to.eql(0);});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "PM-16 第二读者零库存借阅被拒",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": "{{base_url}}/borrows/add",
+        "description": "{\"oracle\": \"unchanged\", \"case_id\": \"PM-16\", \"title\": \"第二读者零库存借阅被拒\"}",
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "book_id",
+              "value": "{{book_id}}",
+              "type": "text"
+            },
+            {
+              "key": "reader_id",
+              "value": "{{reader_b_id}}",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200',()=>pm.response.to.have.status(200));",
+              "pm.test('业务提示符合预期',()=>pm.expect(pm.response.text()).to.include(\"库存不足\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "PM-17 借阅缺失编号应400",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": "{{base_url}}/borrows/add",
+        "description": "{\"oracle\": \"unchanged\", \"case_id\": \"PM-17\", \"title\": \"借阅缺失编号应400\"}",
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": []
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 400',()=>pm.response.to.have.status(400));",
+              "pm.test('业务提示符合预期',()=>pm.expect(pm.response.text()).to.include(\"非负整数\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "PM-18 不存在图书拒绝",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": "{{base_url}}/borrows/add",
+        "description": "{\"oracle\": \"unchanged\", \"case_id\": \"PM-18\", \"title\": \"不存在图书拒绝\"}",
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "book_id",
+              "value": "999999999",
+              "type": "text"
+            },
+            {
+              "key": "reader_id",
+              "value": "{{reader_a_id}}",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200',()=>pm.response.to.have.status(200));",
+              "pm.test('业务提示符合预期',()=>pm.expect(pm.response.text()).to.include(\"图书不存在\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "PM-19 正常归还",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{base_url}}/borrows/return/{{borrow_id}}",
+        "description": "{\"oracle\": \"return\", \"case_id\": \"PM-19\", \"title\": \"正常归还\"}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200',()=>pm.response.to.have.status(200));",
+              "pm.test('业务提示符合预期',()=>pm.expect(pm.response.text()).to.include(\"成功\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "PM-20 重复归还拒绝",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{base_url}}/borrows/return/{{borrow_id}}",
+        "description": "{\"oracle\": \"unchanged\", \"case_id\": \"PM-20\", \"title\": \"重复归还拒绝\"}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200',()=>pm.response.to.have.status(200));",
+              "pm.test('业务提示符合预期',()=>pm.expect(pm.response.text()).to.include(\"该图书已归还\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "PM-21 归还后库存恢复1",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{base_url}}/books/search?q={{book_name}}",
+        "description": "{\"oracle\": \"unchanged\", \"case_id\": \"PM-21\", \"title\": \"归还后库存恢复1\"}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200',()=>pm.response.to.have.status(200));",
+              "const $=require('cheerio').load(pm.response.text());",
+              "const row=$('tbody tr').toArray().find(el=>$(el).find('td').eq(1).text().trim()===pm.collectionVariables.get('book_name'));",
+              "pm.test('目标图书库存为1',()=>{pm.expect(row).to.exist; pm.expect(Number($(row).find('td').eq(4).text().trim())).to.eql(1);});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "PM-22 操作员退出",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{base_url}}/logout",
+        "description": "{\"oracle\": \"unchanged\", \"case_id\": \"PM-22\", \"title\": \"操作员退出\"}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 302',()=>pm.response.to.have.status(302));",
+              "pm.test('退出跳转登录页',()=>pm.expect(pm.response.headers.get('Location')).to.eql('/login'));"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "followRedirects": false
+      }
+    },
+    {
+      "name": "PM-23 查看员登录",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": "{{base_url}}/login",
+        "description": "{\"oracle\": \"unchanged\", \"case_id\": \"PM-23\", \"title\": \"查看员登录\"}",
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "username",
+              "value": "{{viewer_user}}",
+              "type": "text"
+            },
+            {
+              "key": "password",
+              "value": "{{viewer_password}}",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200',()=>pm.response.to.have.status(200));",
+              "pm.test('业务提示符合预期',()=>pm.expect(pm.response.text()).to.include(\"查看员\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "PM-24 查看员查询图书",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{base_url}}/books/search?q={{book_name}}",
+        "description": "{\"oracle\": \"unchanged\", \"case_id\": \"PM-24\", \"title\": \"查看员查询图书\"}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200',()=>pm.response.to.have.status(200));",
+              "const $=require('cheerio').load(pm.response.text());",
+              "const row=$('tbody tr').toArray().find(el=>$(el).find('td').eq(1).text().trim()===pm.collectionVariables.get('book_name'));",
+              "pm.test('目标图书库存为1',()=>{pm.expect(row).to.exist; pm.expect(Number($(row).find('td').eq(4).text().trim())).to.eql(1);});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "PM-25 查看员新增图书越权拒绝",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": "{{base_url}}/books/add",
+        "description": "{\"oracle\": \"unchanged\", \"case_id\": \"PM-25\", \"title\": \"查看员新增图书越权拒绝\"}",
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "book_name",
+              "value": "{{run_tag}}_DENIED",
+              "type": "text"
+            },
+            {
+              "key": "stock",
+              "value": "1",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200',()=>pm.response.to.have.status(200));",
+              "pm.test('业务提示符合预期',()=>pm.expect(pm.response.text()).to.include(\"无操作权限\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "PM-26 查看员直接借阅越权拒绝",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": "{{base_url}}/borrows/add",
+        "description": "{\"oracle\": \"unchanged\", \"case_id\": \"PM-26\", \"title\": \"查看员直接借阅越权拒绝\"}",
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "book_id",
+              "value": "{{book_id}}",
+              "type": "text"
+            },
+            {
+              "key": "reader_id",
+              "value": "{{reader_b_id}}",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200',()=>pm.response.to.have.status(200));",
+              "pm.test('业务提示符合预期',()=>pm.expect(pm.response.text()).to.include(\"无操作权限\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "PM-27 查看员新增读者越权拒绝",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": "{{base_url}}/readers/add",
+        "description": "{\"oracle\": \"unchanged\", \"case_id\": \"PM-27\", \"title\": \"查看员新增读者越权拒绝\"}",
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "name",
+              "value": "{{run_tag}}_DENIED",
+              "type": "text"
+            },
+            {
+              "key": "phone",
+              "value": "{{phone_a}}",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200',()=>pm.response.to.have.status(200));",
+              "pm.test('业务提示符合预期',()=>pm.expect(pm.response.text()).to.include(\"无操作权限\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "PM-28 查看员归还越权拒绝",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{base_url}}/borrows/return/{{borrow_id}}",
+        "description": "{\"oracle\": \"unchanged\", \"case_id\": \"PM-28\", \"title\": \"查看员归还越权拒绝\"}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200',()=>pm.response.to.have.status(200));",
+              "pm.test('业务提示符合预期',()=>pm.expect(pm.response.text()).to.include(\"无操作权限\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "PM-29 越权后库存仍为1",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{base_url}}/books/search?q={{book_name}}",
+        "description": "{\"oracle\": \"unchanged\", \"case_id\": \"PM-29\", \"title\": \"越权后库存仍为1\"}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200',()=>pm.response.to.have.status(200));",
+              "const $=require('cheerio').load(pm.response.text());",
+              "const row=$('tbody tr').toArray().find(el=>$(el).find('td').eq(1).text().trim()===pm.collectionVariables.get('book_name'));",
+              "pm.test('目标图书库存为1',()=>{pm.expect(row).to.exist; pm.expect(Number($(row).find('td').eq(4).text().trim())).to.eql(1);});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "PM-30 退出后不能访问借阅",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{base_url}}/logout",
+        "description": "{\"oracle\": \"unchanged\", \"case_id\": \"PM-30\", \"title\": \"退出后不能访问借阅\"}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 302',()=>pm.response.to.have.status(302));",
+              "pm.test('退出跳转登录页',()=>pm.expect(pm.response.headers.get('Location')).to.eql('/login'));"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "followRedirects": false
+      }
+    },
+    {
+      "name": "PM-31 退出后借阅列表被拦截",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{base_url}}/borrows",
+        "description": "{\"oracle\": \"unchanged\", \"case_id\": \"PM-31\", \"title\": \"退出后借阅列表被拦截\"}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200',()=>pm.response.to.have.status(200));",
+              "pm.test('业务提示符合预期',()=>pm.expect(pm.response.text()).to.include(\"请输入用户名\"));"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "if(pm.environment.get('base_url')!=='http://127.0.0.1:5019') throw new Error('仅允许本机5019隔离环境');"
+        ]
+      }
+    }
+  ],
+  "variable": []
+}
